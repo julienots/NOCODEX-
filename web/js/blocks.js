@@ -31,6 +31,11 @@
     time: { name: 'Temps', icon: '⏱️', colour: '#5CB1D6', help: 'L\'heure, la date, un chronomètre.' },
     data: { name: 'Données & Web', icon: '🌐', colour: '#59C059', help: 'Sauvegarder dans le téléphone, télécharger depuis Internet (API), JSON, partager, copier.' },
     device: { name: 'Appareil', icon: '📍', colour: '#FF8C1A', help: 'Le téléphone : vibration, GPS, caméra, plein écran, taille de l\'écran.' },
+    pages: { name: 'Écrans & navigation', icon: '🗂️', colour: '#3D7BD9', help: 'Pour les vraies apps : plusieurs écrans, barre de titre, onglets en bas, cartes, thèmes, animations.' },
+    control: { name: 'Contrôles & physique', icon: '🕹️', colour: '#7B4FE0', help: 'Rendre un sprite jouable en UN bloc, sauts, gravité, caméra qui suit, pause.' },
+    collide: { name: 'Collisions & groupes', icon: '💥', colour: '#C2185B', help: 'Quand deux sprites se touchent, faire apparaître des tirs/ennemis, gérer des groupes, explosions.' },
+    world: { name: 'Niveaux, 2.5D & 3D', icon: '🏰', colour: '#00897B', help: 'Dessiner des niveaux avec des lettres, perspective 2.5D, labyrinthe 3D, fonds qui défilent.' },
+    db: { name: 'Base de données', icon: '🗃️', colour: '#2E7D32', help: 'Fiches (contacts, produits…), base de données dans le téléphone, tableaux et graphiques.' },
     code: { name: 'Code avancé', icon: '🧩', colour: '#5B5B73', help: 'Pour aller plus loin : écrire directement du JavaScript, du HTML ou du CSS dans un bloc.' }
   };
 
@@ -153,27 +158,27 @@
       help: 'Bouge un sprite. x positif = vers la droite, y positif = vers le bas.' },
     { cat: 'game', type: 'nx_sprite_goto', msg: 'placer %1 en x %2 y %3', args: [V('NAME', 'String', 'chat'), V('X', 'Number', 180), V('Y', 'Number', 300)], call: 'spriteGoto', help: 'Téléporte un sprite à une position.' },
     { cat: 'game', type: 'nx_sprite_random', msg: 'placer %1 au hasard', args: [V('NAME', 'String', 'etoile')], call: 'spriteRandom', help: 'Place le sprite n\'importe où dans la scène.' },
-    { cat: 'game', type: 'nx_sprite_set', msg: 'mettre %1 du sprite %2 à %3', args: [D('PROP', [['x', 'x'], ['y', 'y'], ['taille', 'size'], ['angle', 'angle'], ['transparence (0-1)', 'opacity'], ['vitesse x', 'vx'], ['vitesse y', 'vy'], ['apparence', 'look']]), V('NAME', 'String', 'chat'), V('VAL', null, 0)], params: ['NAME', 'PROP', 'VAL'], call: 'spriteSet',
+    { cat: 'game', type: 'nx_sprite_set', msg: 'mettre %1 du sprite %2 à %3', args: [D('PROP', [['x', 'x'], ['y', 'y'], ['taille', 'size'], ['angle', 'angle'], ['transparence (0-1)', 'opacity'], ['vitesse x', 'vx'], ['vitesse y', 'vy'], ['hauteur 2.5D (z)', 'z'], ['calque', 'layer'], ['apparence', 'look'], ['groupe', 'group']]), V('NAME', 'String', 'chat'), V('VAL', null, 0)], params: ['NAME', 'PROP', 'VAL'], call: 'spriteSet',
       help: 'Règle une propriété. La vitesse fait bouger le sprite tout seul à chaque image.' },
     { cat: 'game', type: 'nx_sprite_change', msg: 'augmenter %1 du sprite %2 de %3', args: [D('PROP', [['x', 'x'], ['y', 'y'], ['taille', 'size'], ['angle', 'angle'], ['transparence', 'opacity'], ['vitesse x', 'vx'], ['vitesse y', 'vy']]), V('NAME', 'String', 'chat'), V('VAL', 'Number', 10)], params: ['NAME', 'PROP', 'VAL'], call: 'spriteChange',
       help: 'Ajoute (ou retire avec un nombre négatif) une valeur à une propriété.' },
     { cat: 'game', type: 'nx_sprite_get', msg: '%1 du sprite %2', args: [D('PROP', [['x', 'x'], ['y', 'y'], ['taille', 'size'], ['angle', 'angle'], ['vitesse x', 'vx'], ['vitesse y', 'vy'], ['apparence', 'look']]), V('NAME', 'String', 'chat')], params: ['NAME', 'PROP'], out: null, call: 'spriteGet',
       help: 'Lit une propriété d\'un sprite (sa position, sa taille…).' },
-    { cat: 'game', type: 'nx_sprite_flag', msg: 'sprite %1 %2 : %3', args: [V('NAME', 'String', 'balle'), D('FLAG', [['rebondit sur les bords', 'bounce'], ['tombe (gravité)', 'gravity'], ['est visible', 'visible']]), R('VAL', YESNO)], call: 'spriteSet',
+    { cat: 'control', type: 'nx_sprite_flag', msg: 'sprite %1 %2 : %3', args: [V('NAME', 'String', 'balle'), D('FLAG', [['rebondit sur les bords', 'bounce'], ['tombe (gravité)', 'gravity'], ['est visible', 'visible'], ['est solide (mur/sol)', 'solid'], ['est retourné', 'flip'], ['disparaît hors du monde', 'autoDelete']]), R('VAL', YESNO)], call: 'spriteSet',
       help: 'Active des comportements automatiques : rebond, gravité, visibilité.' },
-    { cat: 'game', type: 'nx_gravity', msg: 'force de la gravité %1', args: [V('G', 'Number', 0.5)], call: 'setGravity', help: 'Plus le nombre est grand, plus les sprites "qui tombent" tombent vite.' },
-    { cat: 'game', type: 'nx_sprite_towards', msg: 'lancer %1 vers x %2 y %3 vitesse %4', args: [V('NAME', 'String', 'balle'), V('X', 'Number', 180), V('Y', 'Number', 0), V('SPEED', 'Number', 5)], call: 'pointTowards',
+    { cat: 'control', type: 'nx_gravity', msg: 'force de la gravité %1', args: [V('G', 'Number', 0.5)], call: 'setGravity', help: 'Plus le nombre est grand, plus les sprites "qui tombent" tombent vite.' },
+    { cat: 'control', type: 'nx_sprite_towards', msg: 'lancer %1 vers x %2 y %3 vitesse %4', args: [V('NAME', 'String', 'balle'), V('X', 'Number', 180), V('Y', 'Number', 0), V('SPEED', 'Number', 5)], call: 'pointTowards',
       help: 'Donne au sprite une vitesse dirigée vers un point.' },
-    { cat: 'game', type: 'nx_sprite_keep', msg: 'garder %1 dans la scène', args: [V('NAME', 'String', 'chat')], call: 'keepInside', help: 'Empêche le sprite de sortir de l\'écran.' },
+    { cat: 'control', type: 'nx_sprite_keep', msg: 'garder %1 dans la scène', args: [V('NAME', 'String', 'chat')], call: 'keepInside', help: 'Empêche le sprite de sortir de l\'écran.' },
     { cat: 'game', type: 'nx_sprite_clone', msg: 'copier le sprite %1 sous le nom %2', args: [V('NAME', 'String', 'ennemi'), V('NEW', 'String', 'ennemi2')], call: 'spriteClone', help: 'Crée une copie (pratique pour plusieurs ennemis).' },
     { cat: 'game', type: 'nx_sprite_delete', msg: 'supprimer le sprite %1', args: [V('NAME', 'String', 'etoile')], call: 'spriteDelete', help: 'Fait disparaître définitivement un sprite.' },
-    { cat: 'game', type: 'nx_touching', msg: '%1 touche %2 ?', args: [V('A', 'String', 'chat'), V('B', 'String', 'etoile')], out: 'Boolean', call: 'touching', help: 'Vrai si les deux sprites se touchent (collision).' },
-    { cat: 'game', type: 'nx_touching_group', msg: '%1 touche un sprite dont le nom commence par %2 ?', args: [V('A', 'String', 'chat'), V('P', 'String', 'ennemi')], out: 'Boolean', call: 'touchingGroup',
+    { cat: 'collide', type: 'nx_touching', msg: '%1 touche %2 ?', args: [V('A', 'String', 'chat'), V('B', 'String', 'etoile')], out: 'Boolean', call: 'touching', help: 'Vrai si les deux sprites se touchent (collision).' },
+    { cat: 'collide', type: 'nx_touching_group', msg: '%1 touche un sprite dont le nom commence par %2 ?', args: [V('A', 'String', 'chat'), V('P', 'String', 'ennemi')], out: 'Boolean', call: 'touchingGroup',
       help: 'Collision avec un groupe (ennemi1, ennemi2…). Le nom trouvé est dans "nom du sprite touché".' },
-    { cat: 'game', type: 'nx_touched_sprite', msg: 'nom du sprite touché', out: 'String', prop: 'touchedSprite', help: 'Le sprite trouvé par le bloc "touche un sprite dont le nom commence par".' },
-    { cat: 'game', type: 'nx_at_edge', msg: '%1 touche le bord ?', args: [V('NAME', 'String', 'chat')], out: 'Boolean', call: 'atEdge', help: 'Vrai si le sprite est au bord de la scène.' },
-    { cat: 'game', type: 'nx_distance', msg: 'distance entre %1 et %2', args: [V('A', 'String', 'chat'), V('B', 'String', 'etoile')], out: 'Number', call: 'distance', help: 'La distance en pixels entre deux sprites.' },
-    { cat: 'game', type: 'nx_sprite_exists', msg: 'le sprite %1 existe ?', args: [V('NAME', 'String', 'etoile')], out: 'Boolean', call: 'spriteExists', help: 'Vrai si le sprite n\'a pas été supprimé.' },
+    { cat: 'collide', type: 'nx_touched_sprite', msg: 'nom du sprite touché', out: 'String', prop: 'touchedSprite', help: 'Le sprite trouvé par le bloc "touche un sprite dont le nom commence par".' },
+    { cat: 'collide', type: 'nx_at_edge', msg: '%1 touche le bord ?', args: [V('NAME', 'String', 'chat')], out: 'Boolean', call: 'atEdge', help: 'Vrai si le sprite est au bord de la scène.' },
+    { cat: 'collide', type: 'nx_distance', msg: 'distance entre %1 et %2', args: [V('A', 'String', 'chat'), V('B', 'String', 'etoile')], out: 'Number', call: 'distance', help: 'La distance en pixels entre deux sprites.' },
+    { cat: 'collide', type: 'nx_sprite_exists', msg: 'le sprite %1 existe ?', args: [V('NAME', 'String', 'etoile')], out: 'Boolean', call: 'spriteExists', help: 'Vrai si le sprite n\'a pas été supprimé.' },
     { cat: 'game', type: 'nx_key_down', msg: 'touche %1 enfoncée ?', args: [D('KEY', KEYS.slice(0, 6))], out: 'Boolean', call: 'keyDown', help: 'Vrai tant qu\'on reste appuyé (à utiliser dans "à chaque image").' },
     { cat: 'game', type: 'nx_gamepad', msg: '🕹️ afficher la manette tactile', call: 'gamepad', help: 'Ajoute des flèches et un bouton A à l\'écran pour jouer au doigt sur téléphone.' },
     { cat: 'game', type: 'nx_tap_x', msg: 'x du toucher', out: 'Number', prop: 'tapX', help: 'Position horizontale du dernier toucher dans la scène.' },
@@ -238,6 +243,116 @@
     { cat: 'device', type: 'nx_keep_awake', msg: 'garder l\'écran allumé %1', args: [R('ON', YESNO)], call: 'keepAwake', help: 'Empêche l\'écran de s\'éteindre (app Android).' },
     { cat: 'device', type: 'nx_reload', msg: '🔄 redémarrer l\'application', call: 'reload', help: 'Relance l\'app depuis le début.' },
     { cat: 'device', type: 'nx_exit', msg: '🚪 quitter l\'application', call: 'exit', help: 'Ferme l\'app (sur Android).' },
+
+    // ===== Écrans & navigation (vraies apps) =====
+    { cat: 'pages', type: 'nx_page', msg: '🗂️ écran %1 %2', args: [F('NAME', 'Accueil'), S()], call: 'page',
+      help: 'Un écran (une page) de ton app. Mets dedans ce qui doit s\'afficher. Le premier écran créé s\'affiche au démarrage.' },
+    { cat: 'pages', type: 'nx_go_page', msg: '➡️ aller à l\'écran %1', args: [F('NAME', 'Accueil')], call: 'goPage',
+      help: 'Affiche un autre écran. Le bouton retour du téléphone revient à l\'écran précédent.' },
+    { cat: 'pages', type: 'nx_back', msg: '⬅️ revenir à l\'écran précédent', call: 'back', help: 'Retourne à l\'écran d\'avant.' },
+    { cat: 'pages', type: 'nx_current_page', msg: 'écran actuel', out: 'String', call: 'currentPage', help: 'Le nom de l\'écran affiché.' },
+    { cat: 'pages', type: 'nx_app_bar', msg: '🔝 barre de titre %1 couleur %2', args: [V('T', 'String', 'Mon app'), V('C', 'Colour', '#ffcc22')], call: 'appBar',
+      help: 'Une barre fixe en haut de l\'app avec un titre et une flèche retour automatique.' },
+    { cat: 'pages', type: 'nx_tab_bar', msg: '🔻 barre d\'onglets en bas %1', args: [V('SPEC', 'String', 'Accueil:🏠,Jeu:🎮,Profil:👤')], call: 'tabBar',
+      help: 'Une barre de navigation en bas, comme dans les vraies apps. Écris : NomÉcran:emoji, séparés par des virgules.' },
+    { cat: 'pages', type: 'nx_card', msg: '🃏 carte image %1 titre %2 texte %3 id %4 quand on touche %5', args: [V('IMG', 'String', 'https://picsum.photos/400/200'), V('T', 'String', 'Titre'), V('TXT', 'String', 'Une petite description'), F('ID', ''), S()], params: ['IMG', 'T', 'TXT', 'DO', 'ID'], call: 'card',
+      help: 'Une jolie carte (image + titre + texte) qu\'on peut toucher. Laisse l\'image vide pour une carte sans image.' },
+    { cat: 'pages', type: 'nx_badge', msg: 'étiquette %1 couleur %2', args: [V('T', 'String', 'NOUVEAU'), V('C', 'Colour', '#e53935')], call: 'badge', help: 'Un petit badge coloré.' },
+    { cat: 'pages', type: 'nx_progress', msg: 'barre de progression id %1 valeur %2 sur %3', args: [F('ID', 'prog'), V('V', 'Number', 40), V('MAX', 'Number', 100)], call: 'progress',
+      help: 'Une barre qui se remplit. Réutilise le même id pour la mettre à jour.' },
+    { cat: 'pages', type: 'nx_theme', msg: '🎨 thème de l\'app %1', args: [D('T', [['clair', 'clair'], ['sombre', 'sombre'], ['néon', 'neon'], ['océan', 'ocean'], ['forêt', 'foret'], ['bonbon', 'bonbon'], ['rétro', 'retro']])], call: 'theme',
+      help: 'Change d\'un coup toutes les couleurs de l\'app.' },
+    { cat: 'pages', type: 'nx_animate_el', msg: '✨ animer %1 effet %2', args: [F('ID', 'monBouton'), D('FX', [['rebond', 'bounce'], ['secousse', 'shake'], ['apparition', 'fade'], ['zoom', 'zoom'], ['tour complet', 'spin'], ['pulsation', 'pulse']])], call: 'animateEl',
+      help: 'Une animation sur un élément (id). Mets « page » pour animer tout l\'écran.' },
+    { cat: 'events', type: 'nx_on_enter', msg: 'quand on appuie sur Entrée dans %1 %2', args: [F('ID', 'nom'), S()], call: 'onEnter', help: 'Réagit à la touche Entrée dans un champ.' },
+
+    // ===== Contrôles & physique =====
+    { cat: 'control', type: 'nx_control', msg: '🕹️ contrôler %1 comme %2 vitesse %3 saut %4', args: [V('NAME', 'String', 'joueur'),
+      D('TYPE', [['jeu de plateforme', 'platform'], ['vue de dessus (4 directions)', 'topdown'], ['bagarre 2.5D', 'beat'], ['suit le doigt', 'follow'], ['glisser au doigt', 'drag'], ['patrouille (aller-retour)', 'patrol'], ['se promène au hasard', 'wander']]),
+      V('SPEED', 'Number', 4), V('JUMP', 'Number', 13)], params: ['NAME', 'TYPE', 'SPEED', 'JUMP'], call: 'control',
+      help: 'LE bloc magique : un seul bloc rend le sprite jouable (flèches, saut, manette tactile affichée automatiquement) ou lui donne un comportement (patrouille, promenade). Marche aussi avec un nom de groupe.' },
+    { cat: 'control', type: 'nx_chase', msg: '🎯 %1 poursuit %2 vitesse %3', args: [V('NAME', 'String', 'ennemi'), V('T', 'String', 'joueur'), V('SPEED', 'Number', 2)], call: 'chase',
+      help: 'Le sprite (ou tout un groupe) suit un autre sprite en permanence. Parfait pour les ennemis.' },
+    { cat: 'control', type: 'nx_jump', msg: '⤴️ faire sauter %1 force %2', args: [V('NAME', 'String', 'joueur'), V('F', 'Number', 12)], call: 'jump', help: 'Fait sauter le sprite (s\'il est au sol).' },
+    { cat: 'control', type: 'nx_on_ground', msg: '%1 est au sol ?', args: [V('NAME', 'String', 'joueur')], out: 'Boolean', call: 'onGround', help: 'Vrai si le sprite est posé sur quelque chose.' },
+    { cat: 'control', type: 'nx_camera_follow', msg: '🎥 la caméra suit %1', args: [V('NAME', 'String', 'joueur')], call: 'cameraFollow',
+      help: 'L\'écran défile pour garder le sprite au centre. Indispensable pour les niveaux plus grands que l\'écran.' },
+    { cat: 'control', type: 'nx_camera_goto', msg: 'placer la caméra en x %1 y %2', args: [V('X', 'Number', 0), V('Y', 'Number', 0)], call: 'cameraGoto', help: 'Place la vue à un endroit précis du monde.' },
+    { cat: 'control', type: 'nx_world_size', msg: 'taille du monde largeur %1 hauteur %2', args: [V('W', 'Number', 2000), V('H', 'Number', 600)], call: 'worldSize',
+      help: 'Le monde peut être plus grand que l\'écran (la caméra le parcourt). Les niveaux en texte le règlent tout seuls.' },
+    { cat: 'control', type: 'nx_pause', msg: '⏸ pause du jeu %1', args: [R('P', YESNO)], call: 'pause', help: 'Met en pause ou relance le jeu.' },
+    { cat: 'control', type: 'nx_shake', msg: '📳 secouer l\'écran force %1', args: [V('F', 'Number', 10)], call: 'shake', help: 'Un tremblement de caméra (choc, explosion).' },
+
+    // ===== Collisions & groupes =====
+    { cat: 'collide', type: 'nx_collide', msg: '💥 quand %1 touche %2 %3', args: [V('A', 'String', 'joueur'), V('B', 'String', 'piece'), S()], call: 'onCollide',
+      help: 'Se déclenche une fois au moment du contact. Tu peux mettre un nom de sprite OU un nom de groupe (ex : « piece », « ennemi »). Utilise « l\'autre sprite » pour agir sur celui qui a été touché.' },
+    { cat: 'collide', type: 'nx_other', msg: 'l\'autre sprite', out: 'String', prop: 'other', help: 'Dans « quand … touche … » : le sprite touché (ex : la pièce ramassée).' },
+    { cat: 'collide', type: 'nx_self', msg: 'ce sprite', out: 'String', prop: 'self', help: 'Dans « quand … touche … » ou « quand on touche le sprite » : le sprite concerné.' },
+    { cat: 'collide', type: 'nx_spawn', msg: '✨ faire apparaître %1 groupe %2 en x %3 y %4 vitesse x %5 y %6', args: [V('LOOK', 'Emoji', '🔥'), V('G', 'String', 'balle'), V('X', 'Number', 180), V('Y', 'Number', 500), V('VX', 'Number', 0), V('VY', 'Number', -10)], call: 'spawn',
+      help: 'Crée un nouveau sprite dans un groupe : tirs, ennemis, pièces… Il disparaît tout seul en sortant du monde.' },
+    { cat: 'collide', type: 'nx_last_spawned', msg: 'dernier sprite apparu', out: 'String', prop: 'lastSpawned', help: 'Le nom du dernier sprite créé avec « faire apparaître ».' },
+    { cat: 'collide', type: 'nx_set_group', msg: 'mettre %1 dans le groupe %2', args: [V('NAME', 'String', 'chat'), V('G', 'String', 'amis')], params: ['NAME', '=group', 'G'], call: 'spriteSet',
+      help: 'Range un sprite dans un groupe pour gérer plusieurs sprites d\'un coup.' },
+    { cat: 'collide', type: 'nx_for_each_group', msg: 'pour chaque sprite du groupe %1 faire %2', args: [V('G', 'String', 'ennemi'), S()], call: 'forEachInGroup',
+      help: 'Répète les blocs pour chaque sprite du groupe. « sprite actuel » donne son nom.' },
+    { cat: 'collide', type: 'nx_current_sprite', msg: 'sprite actuel', out: 'String', prop: 'current', help: 'Dans « pour chaque sprite du groupe ».' },
+    { cat: 'collide', type: 'nx_group_count', msg: 'nombre de sprites du groupe %1', args: [V('G', 'String', 'piece')], out: 'Number', call: 'groupCount', help: 'Combien de sprites restent dans le groupe (ex : 0 pièce = niveau gagné).' },
+    { cat: 'collide', type: 'nx_explode', msg: '🎆 explosion sur %1 couleur %2', args: [V('NAME', 'String', 'ennemi'), V('C', 'Colour', '#fb8c00')], call: 'explodeAt', help: 'Des particules jaillissent du sprite.' },
+    { cat: 'collide', type: 'nx_particles', msg: '🎆 particules en x %1 y %2 apparence %3 nombre %4', args: [V('X', 'Number', 180), V('Y', 'Number', 300), V('L', 'Emoji', '⭐'), V('N', 'Number', 20)], call: 'particles',
+      help: 'Une gerbe de particules (couleur ou emoji).' },
+
+    // ===== Niveaux, 2.5D & 3D =====
+    { cat: 'world', type: 'nx_level', msg: '🏰 créer le niveau %1 taille des cases %2', args: [V('TEXT', 'String', '..........|....*.....|..===...E.|P.........|##########'), V('T', 'Number', 40)], call: 'level',
+      help: 'Dessine ton niveau avec des lettres ! Chaque ligne est séparée par « | ». # mur · = plateforme · B brique · * étoile (groupe piece) · o pièce · E ennemi qui patrouille · M fantôme · ^ pic · D porte (sortie) · K clé · H cœur · T arbre · P départ du joueur. Le monde et la caméra s\'adaptent tout seuls.' },
+    { cat: 'world', type: 'nx_legend', msg: 'dans les niveaux, la lettre %1 = apparence %2 groupe %3 solide %4', args: [F('CH', 'X'), V('LOOK', 'Emoji', '🍄'), V('G', 'String', 'bonus'), R('S', YESNO)], call: 'legend',
+      help: 'Invente tes propres lettres de niveau (à placer AVANT « créer le niveau »).' },
+    { cat: 'world', type: 'nx_start_x', msg: 'x de départ du niveau', out: 'Number', prop: 'startX', help: 'Position de la lettre P.' },
+    { cat: 'world', type: 'nx_start_y', msg: 'y de départ du niveau', out: 'Number', prop: 'startY', help: 'Position de la lettre P.' },
+    { cat: 'world', type: 'nx_mode25', msg: '🧊 mode 2.5D horizon à %1 couleur du sol %2', args: [V('H', 'Number', 220), V('C', 'Colour', '#6d4c41')], call: 'mode25',
+      help: 'Vue en perspective : les sprites rapetissent au loin, ont une ombre et sautent en hauteur. Pour les jeux de bagarre, de course, d\'aventure.' },
+    { cat: 'world', type: 'nx_maze', msg: '🧱 labyrinthe 3D %1 ciel %2 sol %3', args: [V('TEXT', 'String', '##########|#P...#...#|#.##.#.#.#|#..#...#*#|##.####..#|#...*...D#|##########'), V('SKY', 'Colour', '#4fc3f7'), V('GROUND', 'Colour', '#3e2723')], call: 'maze',
+      help: 'Un vrai jeu en 3D à la première personne (comme les premiers jeux de tir) ! Mêmes lettres que les niveaux ; murs : # 1 2 3 4 (couleurs). Le joueur s\'appelle « joueur » : flèches ou toucher l\'écran pour avancer/tourner.' },
+    { cat: 'world', type: 'nx_minimap', msg: 'mini-carte du labyrinthe %1', args: [R('ON', YESNO)], call: 'minimap', help: 'Affiche un plan du labyrinthe dans un coin.' },
+    { cat: 'world', type: 'nx_turn', msg: 'tourner la vue de %1 degrés', args: [V('D', 'Number', 90)], call: 'turn', help: 'Fait pivoter la vue 3D.' },
+    { cat: 'world', type: 'nx_scene_gradient', msg: '🌅 fond de scène dégradé %1 vers %2', args: [V('A', 'Colour', '#1e88e5'), V('B', 'Colour', '#ffcba4')], call: 'sceneGradient', help: 'Un beau ciel en dégradé.' },
+    { cat: 'world', type: 'nx_scene_image', msg: '🏞️ image de fond %1 défilement %2', args: [V('SRC', 'String', 'https://picsum.photos/800/400'), V('S', 'Number', 0.3)], call: 'sceneImage',
+      help: 'Une image de fond qui défile plus lentement que le jeu (effet de profondeur « parallaxe »). Ajoute plusieurs images pour plusieurs couches.' },
+
+    // ===== Jeux : en plus =====
+    { cat: 'game', type: 'nx_animate', msg: '🎞️ animer %1 avec les images %2 vitesse %3', args: [V('NAME', 'String', 'joueur'), V('F', 'String', '🐱,😺,😸'), V('S', 'Number', 10)], call: 'animate',
+      help: 'Fait défiler plusieurs apparences (emojis ou médias séparés par des virgules) : marche, battements d\'ailes… Plus le nombre est petit, plus c\'est rapide.' },
+    { cat: 'game', type: 'nx_label', msg: 'texte au-dessus de %1 : %2', args: [V('NAME', 'String', 'joueur'), V('T', 'String', 'Moi')], call: 'label', help: 'Un nom ou un message affiché au-dessus du sprite.' },
+    { cat: 'game', type: 'nx_life_bar', msg: '❤️ barre de vie de %1 valeur %2 max %3', args: [V('NAME', 'String', 'joueur'), V('V', 'Number', 100), V('MAX', 'Number', 100)], call: 'lifeBar', help: 'Une barre de vie verte/jaune/rouge au-dessus du sprite.' },
+    { cat: 'game', type: 'nx_to_front', msg: 'mettre %1 au premier plan', args: [V('NAME', 'String', 'joueur')], call: 'toFront', help: 'Dessine le sprite par-dessus les autres.' },
+
+    // ===== Base de données & fiches =====
+    { cat: 'db', type: 'nx_obj', msg: '📇 fiche %1 = %2 %3 = %4 %5 = %6', args: [F('K1', 'nom'), V('V1', null, 'Léa'), F('K2', 'age'), V('V2', null, 12), F('K3', ''), V('V3', null)], out: null, call: 'obj',
+      help: 'Une fiche regroupe plusieurs informations nommées (un contact, un produit, un score…). Laisse un nom vide pour ne pas l\'utiliser.' },
+    { cat: 'db', type: 'nx_obj_empty', msg: 'fiche vide', out: null, call: 'obj', help: 'Une fiche sans rien dedans.' },
+    { cat: 'db', type: 'nx_set_prop', msg: 'dans la fiche %1 mettre %2 à %3', args: [V('O', null), F('K', 'nom'), V('V', null, 'valeur')], call: 'setProp', help: 'Ajoute ou modifie une information de la fiche.' },
+    { cat: 'db', type: 'nx_get_prop', msg: 'dans la fiche %1 lire %2', args: [V('O', null), V('K', 'String', 'nom')], out: null, call: 'get', help: 'Lit une information de la fiche (marche aussi avec le JSON d\'Internet).' },
+    { cat: 'db', type: 'nx_keys', msg: 'noms des informations de %1', args: [V('O', null)], out: 'Array', call: 'keys', help: 'La liste des noms d\'informations d\'une fiche.' },
+    { cat: 'db', type: 'nx_db_add', msg: '🗃️ ajouter %1 dans la base %2', args: [V('ITEM', null, 'Bonjour'), V('C', 'String', 'notes')], params: ['C', 'ITEM'], call: 'dbAdd',
+      help: 'Enregistre un élément (texte, nombre ou fiche) dans une base de données du téléphone. Elle est gardée même après fermeture.' },
+    { cat: 'db', type: 'nx_db_all', msg: 'tout le contenu de la base %1', args: [V('C', 'String', 'notes')], out: 'Array', call: 'dbAll', help: 'La liste de tous les éléments de la base.' },
+    { cat: 'db', type: 'nx_db_count', msg: 'nombre d\'éléments dans la base %1', args: [V('C', 'String', 'notes')], out: 'Number', call: 'dbCount', help: 'Combien d\'éléments contient la base.' },
+    { cat: 'db', type: 'nx_db_find', msg: 'chercher dans la base %1 où %2 contient %3', args: [V('C', 'String', 'contacts'), V('K', 'String', 'nom'), V('V', 'String', 'lé')], out: 'Array', call: 'dbFind',
+      help: 'Les éléments dont l\'information contient le texte cherché (sans tenir compte des majuscules).' },
+    { cat: 'db', type: 'nx_db_update', msg: 'dans la base %1 élément n° %2 mettre %3 à %4', args: [V('C', 'String', 'contacts'), V('I', 'Number', 1), V('K', 'String', 'nom'), V('V', null, 'Nouveau')], call: 'dbUpdate', help: 'Modifie une information d\'un élément.' },
+    { cat: 'db', type: 'nx_db_remove', msg: 'supprimer l\'élément n° %2 de la base %1', args: [V('C', 'String', 'notes'), V('I', 'Number', 1)], call: 'dbRemove', help: 'Supprime un élément (le premier est le n° 1).' },
+    { cat: 'db', type: 'nx_db_clear', msg: 'vider la base %1', args: [V('C', 'String', 'notes')], call: 'dbClear', help: 'Efface tout le contenu de la base.' },
+    { cat: 'db', type: 'nx_sort_by', msg: 'trier %1 par %2 %3', args: [V('L', 'Array'), V('K', 'String', 'score'), R('D', [['croissant', 'FALSE'], ['décroissant', 'TRUE']])], out: 'Array', call: 'sortBy', help: 'Trie une liste de fiches selon une information (classement, ordre alphabétique…).' },
+    { cat: 'db', type: 'nx_table', msg: '📋 afficher le tableau %1 id %2', args: [V('L', 'Array'), F('ID', 'tableau')], params: ['ID', 'L'], call: 'table',
+      help: 'Affiche une liste (de fiches) sous forme de tableau avec colonnes. Réutilise le même id pour le mettre à jour.' },
+    { cat: 'db', type: 'nx_on_table', msg: 'quand on touche une ligne du tableau %1 %2', args: [F('ID', 'tableau'), S()], call: 'onTableClick',
+      help: 'Réagit au toucher d\'une ligne. « numéro de l\'élément touché » et « élément de liste touché » donnent la ligne.' },
+    { cat: 'db', type: 'nx_chart', msg: '📊 graphique %1 valeurs %2 étiquettes %3 id %4', args: [D('TYPE', [['barres', 'bar'], ['courbe', 'line'], ['camembert', 'pie']]), V('V', null, '12,19,7,15'), V('L', null, 'Lun,Mar,Mer,Jeu'), F('ID', 'graph')], params: ['ID', 'TYPE', 'V', 'L'], call: 'chart',
+      help: 'Dessine un graphique à partir de nombres (liste ou texte séparé par des virgules).' },
+    { cat: 'data', type: 'nx_post', msg: '📤 envoyer %1 à %2 (POST) puis %3', args: [V('DATA', null), V('URL', 'String', 'https://httpbin.org/post'), S()], params: ['URL', 'DATA', 'DO'], call: 'post',
+      help: 'Envoie des données à un serveur (formulaire, score en ligne, webhook Discord…). La réponse est dans « résultat téléchargé ».' },
+    { cat: 'data', type: 'nx_format', msg: 'nombre %1 avec %2 décimales', args: [V('N', 'Number', 3.14159), V('D', 'Number', 2)], out: 'String', call: 'format', help: 'Arrondit joliment un nombre pour l\'afficher (prix, moyenne…).' },
+    { cat: 'time', type: 'nx_countdown', msg: '⏳ compte à rebours %1 s affiché dans %2 puis %3', args: [V('S', 'Number', 10), F('ID', 'chrono'), S()], call: 'countdown',
+      help: 'Décompte les secondes dans un élément (id), puis exécute les blocs à zéro.' },
 
     // ===== Code avancé =====
     { cat: 'code', type: 'nx_comment', msg: '💬 note : %1', args: [F('T', 'Explique ici ce que fait ton programme')], gen: 'comment',
@@ -488,22 +603,69 @@
     { name: 'Fonctions', icon: '🛠️', colour: '#9A5CA6', help: 'Créer tes propres blocs réutilisables (fonctions) pour ne pas répéter les mêmes blocs.', custom: 'PROCEDURE' }
   ];
 
-  function buildToolbox() {
+  // Mode Facile : seulement les blocs indispensables, regroupés par intention.
+  var EASY = [
+    { name: 'Démarrer', icon: '🚀', colour: '#FFAB19', help: 'Commence toujours par ici : QUAND faire les choses.',
+      types: ['nx_start', 'nx_on_click', 'nx_every', 'nx_after', 'nx_frame', 'nx_on_key', 'nx_on_tap'] },
+    { name: 'Afficher', icon: '📱', colour: '#4C97FF', help: 'Mettre des choses à l\'écran.',
+      types: ['nx_heading', 'nx_text', 'nx_button', 'nx_input', 'nx_value', 'nx_set_text', 'nx_image', 'nx_card', 'nx_alert', 'nx_ask', 'nx_theme', 'nx_background', 'nx_color', 'nx_media', 'nx_clear'] },
+    { name: 'Écrans', icon: '🗂️', colour: '#3D7BD9', help: 'Une app avec plusieurs pages.',
+      types: ['nx_page', 'nx_go_page', 'nx_app_bar', 'nx_tab_bar'] },
+    { name: 'Jeu', icon: '🎮', colour: '#9966FF', help: 'Un jeu en quelques blocs : une scène, des personnages, un contrôle.',
+      types: ['nx_scene', 'nx_sprite', 'nx_emoji', 'nx_control', 'nx_chase', 'nx_camera_follow', 'nx_hud', 'nx_sprite_move', 'nx_sprite_random', 'nx_sprite_delete', 'nx_animate'] },
+    { name: 'Touche & tir', icon: '💥', colour: '#C2185B', help: 'Ce qui se passe quand les sprites se touchent.',
+      types: ['nx_collide', 'nx_other', 'nx_spawn', 'nx_explode', 'nx_group_count', 'nx_touching'] },
+    { name: 'Mondes', icon: '🏰', colour: '#00897B', help: 'Niveaux dessinés avec des lettres, 2.5D, 3D.',
+      types: ['nx_level', 'nx_mode25', 'nx_maze', 'nx_scene_gradient'] },
+    { name: 'Sons', icon: '🔊', colour: '#CF63CF', help: 'Bruitages, musique et voix.', types: ['nx_sound', 'nx_note', 'nx_speak', 'nx_vibrate'] },
+    { name: 'Mémoire', icon: '💾', colour: '#2E7D32', help: 'Garder des infos dans le téléphone.',
+      types: ['nx_save', 'nx_load', 'nx_db_add', 'nx_db_all', 'nx_table', 'nx_chart'] }
+  ];
+  var EASY_BUILTIN = [
+    { name: 'Si…', icon: '🔀', colour: '#5C81A6', help: 'Décider : SI quelque chose est vrai ALORS…', contents: [
+      { kind: 'block', type: 'controls_if' }, { kind: 'block', type: 'controls_if', extraState: { hasElse: true } },
+      { kind: 'block', type: 'logic_compare', inputs: { A: num(0), B: num(0) } }, { kind: 'block', type: 'logic_operation' }, { kind: 'block', type: 'logic_boolean' }] },
+    { name: 'Répéter', icon: '🔁', colour: '#5CA65C', help: 'Faire plusieurs fois la même chose.', contents: [
+      { kind: 'block', type: 'controls_repeat_ext', inputs: { TIMES: num(10) } }, { kind: 'block', type: 'controls_forEach' }] },
+    { name: 'Nombres', icon: '🔢', colour: '#5C68A6', help: 'Compter et calculer.', contents: [
+      { kind: 'block', type: 'math_number', fields: { NUM: 0 } }, { kind: 'block', type: 'math_arithmetic', inputs: { A: num(1), B: num(1) } },
+      { kind: 'block', type: 'math_random_int', inputs: { FROM: num(1), TO: num(10) } }] },
+    { name: 'Textes', icon: '🔤', colour: '#5CA68D', help: 'Des mots et des phrases.', contents: [
+      { kind: 'block', type: 'text' }, { kind: 'block', type: 'text_join' },
+      { kind: 'block', type: 'lists_create_with', inputs: { ADD0: txt('pomme'), ADD1: txt('banane') }, extraState: { itemCount: 2 } }] },
+    { name: 'Variables', icon: '📦', colour: '#A65C81', help: 'Retenir une valeur (score, vies…).', custom: 'VARIABLE' }
+  ];
+
+  function buildToolbox(mode) {
     var cats = [];
+    if (mode === 'easy') {
+      var byType = {};
+      NX_BLOCKS.forEach(function (s) { byType[s.type] = s; });
+      EASY.forEach(function (e, i) {
+        cats.push({ kind: 'category', name: e.icon + ' ' + e.name, colour: e.colour,
+          contents: [label(e.help)].concat(e.types.filter(function (t) { return byType[t]; }).map(function (t) { return toolboxEntry(byType[t]); })) });
+        if (i === 3) EASY_BUILTIN.forEach(function (b) {
+          var cat = { kind: 'category', name: b.icon + ' ' + b.name, colour: b.colour };
+          if (b.custom) cat.custom = b.custom; else cat.contents = [label(b.help)].concat(b.contents);
+          cats.push(cat);
+        });
+      });
+      return { kind: 'categoryToolbox', contents: cats };
+    }
     function nxCat(key) {
       var c = CATS[key];
       var contents = [label(c.help)];
       NX_BLOCKS.forEach(function (s) { if (s.cat === key) contents.push(toolboxEntry(s)); });
       return { kind: 'category', name: c.icon + ' ' + c.name, colour: c.colour, contents: contents };
     }
-    cats.push(nxCat('events'), nxCat('ui'), nxCat('game'));
+    cats.push(nxCat('events'), nxCat('ui'), nxCat('pages'), nxCat('game'), nxCat('control'), nxCat('collide'), nxCat('world'));
     BUILTIN.forEach(function (b) {
       var cat = { kind: 'category', name: b.icon + ' ' + b.name, colour: b.colour };
       if (b.custom) cat.custom = b.custom;
       else cat.contents = [label(b.help)].concat(b.contents);
       cats.push(cat);
     });
-    cats.push(nxCat('sound'), nxCat('time'), nxCat('data'), nxCat('device'), nxCat('code'));
+    cats.push(nxCat('sound'), nxCat('time'), nxCat('data'), nxCat('db'), nxCat('device'), nxCat('code'));
     return { kind: 'categoryToolbox', contents: cats };
   }
 
@@ -511,6 +673,7 @@
     register: register,
     toolbox: buildToolbox,
     specs: NX_BLOCKS,
+    colors: COLORS,
     cats: CATS,
     builtin: BUILTIN,
     byType: BY_TYPE,

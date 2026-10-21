@@ -24,17 +24,19 @@ const out = path.join(__dirname, '..', 'build');
   for (const id of ids) {
     const r = await page.evaluate((id) => {
       NXStudio.createProject('Test ' + id, id);
-      const res = { id, blocks: NXStudio.ws().getAllBlocks(false).length };
+      const res = { id, blocks: NXStudio.ws().getAllBlocks(false).length, tops: NXStudio.ws().getTopBlocks(false).length,
+        expected: (NXTemplates.byId(id).xml().match(/<block x=/g) || []).length };
       ['js', 'py', 'php', 'lua', 'dart'].forEach((l) => { res[l] = NXStudio.generate(l).length; });
       res.jsCode = NXStudio.generate('js');
       return res;
     }, id);
     // Vérifie que le JavaScript généré est syntaxiquement valide.
     try { new Function(r.jsCode); } catch (e) { errors.push('syntaxe JS ' + id + ': ' + e.message); }
+    if (r.tops !== r.expected) errors.push('blocs détachés dans ' + id + ' : ' + r.tops + ' au lieu de ' + r.expected);
     const { jsCode, ...summary } = r;
     console.log(JSON.stringify(summary));
     await page.evaluate(() => { NXStudio.showTab('preview'); NXStudio.run(); });
-    await page.waitForTimeout(900);
+    await page.waitForTimeout(['plateforme', 'shooter', 'aventure', 'bagarre', 'labyrinthe3d'].includes(id) ? 2500 : 900);
     const frameErr = await page.evaluate(() => {
       const d = document.querySelector('#preview').contentDocument;
       const e = d && d.getElementById('nx-error');
@@ -42,7 +44,7 @@ const out = path.join(__dirname, '..', 'build');
     });
     const consoleErr = await page.evaluate(() => Array.from(document.querySelectorAll('#console-lines .err')).map((x) => x.textContent).join(' | '));
     if (frameErr || consoleErr) errors.push('aperçu ' + id + ': ' + frameErr + ' ' + consoleErr);
-    if (['jeu', 'calculatrice', 'taches'].includes(id)) await page.screenshot({ path: path.join(out, 'shot-preview-' + id + '.png') });
+    if (['jeu', 'plateforme', 'shooter', 'aventure', 'bagarre', 'labyrinthe3d', 'multiapp', 'contacts', 'depenses'].includes(id)) await page.screenshot({ path: path.join(out, 'shot-preview-' + id + '.png') });
   }
   // Médias : un bloc « mon média » utilisé comme apparence de sprite.
   const media = await page.evaluate(() => {

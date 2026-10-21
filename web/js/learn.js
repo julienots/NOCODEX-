@@ -6,6 +6,15 @@
   'use strict';
 
   var LESSONS = [
+    { id: 'l0', icon: '🟢', title: 'Le plus simple : le mode Facile', time: '2 min', template: null,
+      intro: 'NOCODEX a deux niveaux. En mode Facile, tu ne vois que les blocs essentiels, rangés par envie.',
+      steps: [
+        'En haut de la zone de blocs, le bouton <b>🟢 Facile / 🔥 Expert</b> change le choix de blocs.',
+        '<b>🔎</b> : écris ce que tu veux faire (« sauter », « score », « son ») et NOCODEX te propose le bon bloc. Touche-le : il apparaît dans ta zone.',
+        '<b>📁 Projets → ✨ Je veux créer…</b> : choisis un jeu ou une app <b>déjà complet et qui marche</b>, puis modifie-le petit à petit.',
+        'Astuce : change d\'abord les textes, les couleurs et les emojis d\'un modèle. C\'est la meilleure façon d\'apprendre !'
+      ],
+      challenge: 'Ouvre le modèle « Jeu de plateforme » et remplace le chat 🐱 par un autre emoji.' },
     { id: 'l1', icon: '👋', title: 'Ta première application', time: '3 min', template: 'bonjour',
       intro: 'Tu vas créer une app qui affiche un titre, un texte et un bouton qui parle.',
       steps: [
@@ -108,6 +117,47 @@
         'Les blocs <b>🧩 Code avancé</b> permettent aussi de glisser une ligne de code au milieu de tes blocs.'
       ],
       challenge: 'Dans Mon code → CSS, écris <code>button { background: hotpink; }</code> et lance l\'app.' },
+    { id: 'l12', icon: '🍄', title: 'Un vrai jeu de plateforme', time: '6 min', template: 'plateforme',
+      intro: 'Un niveau entier en UNE ligne de texte, un joueur contrôlé en UN bloc. Voici la recette.',
+      steps: [
+        '<b>🏰 « créer le niveau »</b> : chaque lettre devient un élément. <code>#</code> mur, <code>=</code> plateforme, <code>*</code> étoile, <code>E</code> ennemi, <code>^</code> pic, <code>D</code> porte, <code>P</code> départ. Les lignes sont séparées par <code>|</code>.',
+        '<b>🕹️ « contrôler joueur comme jeu de plateforme »</b> : flèches + saut + gravité + manette tactile. C\'est tout !',
+        '<b>🎥 « la caméra suit joueur »</b> : le niveau défile.',
+        '<b>💥 « quand joueur touche piece »</b> : « piece » est un GROUPE (toutes les étoiles). « l\'autre sprite » = l\'étoile touchée → supprime-la et ajoute 1 au score.',
+        'Ennemi écrasé : si le joueur est AU-DESSUS de l\'ennemi (y plus petit), l\'ennemi explose. Sinon, on perd une vie.',
+        '<b>« nombre de sprites du groupe piece » = 0</b> → toutes les étoiles sont ramassées : la porte s\'ouvre !'
+      ],
+      challenge: 'Ajoute une ligne à ton niveau avec des pièces <code>o</code>, et invente la lettre <code>X</code> = 🍄 avec « dans les niveaux, la lettre … = … ».' },
+    { id: 'l13', icon: '🧊', title: 'La 2.5D et la 3D', time: '5 min', template: 'bagarre',
+      intro: 'Donne de la profondeur à tes jeux, ou plonge carrément dedans en 3D.',
+      steps: [
+        '<b>🧊 « mode 2.5D »</b> : plus un sprite est haut (loin), plus il est petit. Ombres automatiques. Le saut se fait en hauteur (z).',
+        '<b>« contrôler comme bagarre 2.5D »</b> : avancer en profondeur avec ↑ ↓, sauter avec A.',
+        '<b>🎯 « … poursuit … »</b> : les ennemis te suivent tout seuls.',
+        '<b>🧱 « labyrinthe 3D »</b> : un vrai jeu en 3D à la première personne, dessiné avec des lettres comme un niveau. Les étoiles et fantômes apparaissent en 3D !',
+        '<b>« mini-carte »</b> affiche le plan. Le joueur s\'appelle toujours « joueur ».'
+      ],
+      challenge: 'Ouvre « Labyrinthe 3D » et agrandis le labyrinthe avec tes propres couloirs (murs de couleur 1, 2, 3, 4).' },
+    { id: 'l14', icon: '📲', title: 'Une vraie app : écrans et navigation', time: '5 min', template: 'multiapp',
+      intro: 'Les vraies apps ont plusieurs écrans, une barre de titre et des onglets. En blocs, c\'est facile.',
+      steps: [
+        '<b>🗂️ « écran Accueil »</b> : tout ce qui est dedans s\'affiche quand on ouvre cet écran. Le premier écran s\'ouvre au démarrage.',
+        '<b>« aller à l\'écran … »</b> dans un bouton ou une carte pour naviguer. Le bouton retour d\'Android revient en arrière.',
+        '<b>« barre de titre »</b> et <b>« barre d\'onglets en bas »</b> : <code>Accueil:🏠,Profil:👤</code>.',
+        '<b>« carte »</b> : image + titre + texte, qu\'on peut toucher.',
+        '<b>« thème de l\'app »</b> change toutes les couleurs d\'un coup.'
+      ],
+      challenge: 'Ajoute un 4e écran « Réglages » avec un onglet ⚙️.' },
+    { id: 'l15', icon: '🗃️', title: 'Base de données, tableaux, graphiques', time: '6 min', template: 'contacts',
+      intro: 'Enregistre des fiches (contacts, notes, dépenses, scores…) et affiche-les comme un pro.',
+      steps: [
+        '<b>📇 « fiche nom = … téléphone = … »</b> regroupe plusieurs informations.',
+        '<b>🗃️ « ajouter … dans la base contacts »</b> l\'enregistre dans le téléphone (même après fermeture).',
+        '<b>« tout le contenu de la base »</b> + <b>📋 « afficher le tableau »</b> = un tableau avec des colonnes automatiques.',
+        '<b>« chercher dans la base … où nom contient … »</b> pour une barre de recherche.',
+        '<b>📊 « graphique »</b> : barres, courbe ou camembert à partir d\'une liste de nombres (voir le modèle « Suivi de dépenses »).'
+      ],
+      challenge: 'Ajoute une information « ville » aux contacts.' },
     { id: 'l11', icon: '📦', title: 'Exporter : HTML, ZIP, APK', time: '4 min', template: null,
       intro: 'Une fois ton app prête, tu peux la partager ou l\'installer comme une vraie application.',
       steps: [

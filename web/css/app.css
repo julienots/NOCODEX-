@@ -85,6 +85,7 @@ main { flex: 1; position: relative; min-height: 0; }
 /* ---------- Blocs ---------- */
 #blockly { position: absolute; inset: 0; }
 .ws-tools { position: absolute; top: 10px; right: 10px; display: flex; gap: 6px; z-index: 5; }
+.ws-tools .mode-pill { width: auto; padding: 0 10px; font-size: 12px; color: var(--accent); }
 .ws-tools button { width: 40px; height: 40px; border-radius: 12px; border: 1px solid var(--line); background: #15151cdd; font-weight: 800; backdrop-filter: blur(6px); }
 #live-code { position: absolute; left: 0; right: 0; bottom: 0; height: 38%; background: #0d0d12f2; border-top: 2px solid var(--accent); z-index: 6; display: flex; flex-direction: column; }
 .live-head { display: flex; align-items: center; gap: 8px; padding: 6px 10px; font-weight: 700; font-size: 13px; }
@@ -212,3 +213,5 @@ details p { color: #d0d0dc; margin: 8px 0 2px; }
   .lbl { display: none; }
   .btn { padding: 9px 11px; }
 }
+
+@media (max-width: 420px) { .ws-tools { gap: 4px; right: 6px; } .ws-tools button { width: 36px; height: 36px; } #btn-help-blocks { display: none; } }

@@ -11,7 +11,11 @@
   function B(type, o) { return { type: type, o: o || {} }; }
   function t(s) { return { type: 'text', shadow: true, o: { f: { TEXT: s } } }; }
   function n(x) { return { type: 'math_number', shadow: true, o: { f: { NUM: x } } }; }
-  function col(c) { return { type: 'nx_color', shadow: true, o: { f: { C: c } } }; }
+  function col(c) {
+    // Couleur de la liste → bloc « couleur » ; sinon → bloc « couleur code ».
+    var known = window.NXBlocks && NXBlocks.colors.some(function (x) { return x[1] === c; });
+    return { type: known ? 'nx_color' : 'nx_color_hex', shadow: true, o: { f: { C: c } } };
+  }
   function emo(e) { return { type: 'nx_emoji', shadow: true, o: { f: { E: e } } }; }
   function V(name) { return { var: name }; }
   function get(name) { return B('variables_get', { f: { VAR: V(name) } }); }
@@ -331,6 +335,309 @@
       css: '.hero{padding:48px 16px;background:linear-gradient(135deg,#ffcc22,#ff6a00);color:#111;border-radius:0 0 24px 24px}\nmain{display:grid;gap:12px;padding:16px}\n.card{background:#1b1b24;color:#fff;padding:16px;border-radius:16px}',
       js: 'document.getElementById("hello").onclick = function () {\n  NX.toast("Bonjour ! 👋");\n  NX.speak("Bonjour");\n};'
     } });
+
+  /* ===================== Jeux complets ===================== */
+  function hud() { return B('nx_hud', { v: { T: join.apply(null, Array.prototype.slice.call(arguments)) } }); }
+  function other() { return B('nx_other'); }
+  function collide(a, b, body) { return B('nx_collide', { v: { A: t(a), B: t(b) }, s: { DO: body } }); }
+  function sget(prop, name) { return B('nx_sprite_get', { f: { PROP: prop }, v: { NAME: typeof name === 'string' ? t(name) : name } }); }
+  function gameOver(msg) {
+    return seq(
+      B('nx_stop_timers'),
+      B('nx_sound', { f: { S: 'defaite' } }),
+      B('nx_draw_text', { v: { T: t(msg || 'GAME OVER'), X: n(180), Y: n(280), S: n(44), C: col('#ffffff') } }),
+      B('nx_draw_text', { v: { T: t('Touche ↻ Relancer pour rejouer'), X: n(180), Y: n(330), S: n(18), C: col('#fdd835') } }));
+  }
+  function procDef(name, body) { return B('procedures_defnoreturn', { f: { NAME: name }, s: { STACK: body } }); }
+  function procCall(name) { return B('procedures_callnoreturn', { m: '<mutation name="' + name + '"></mutation>' }); }
+
+  var PLATFORM_LEVEL = [
+    '..............................................',
+    '..............................................',
+    '..............................................',
+    '...................*.*.*......................',
+    '..................=======.............*.*.....',
+    '.........*.*.................E.......=====....',
+    '........=====..........==========.............',
+    '.................................*.*..........',
+    '...*.*.........*....E...........=====.........',
+    '..=====......=====............................',
+    '.P....................E.......^^.......E....D.',
+    '##############...#############################',
+    '##############...#############################',
+    '##############################################',
+    '##############################################'
+  ].join('|');
+
+  T.push({ id: 'plateforme', group: 'jeu', icon: '🍄', name: 'Jeu de plateforme', level: 'Complet', desc: 'Niveau dessiné en lettres, saut, caméra qui suit, pièces, ennemis qu\'on écrase, pics, vies, porte de sortie.',
+    xml: function () {
+      return workspace([start(
+        set('score', n(0)), set('vies', n(3)),
+        B('nx_background', { v: { C: col('#000000') } }),
+        B('nx_scene', { v: { W: n(360), H: n(600), C: col('#1e88e5') } }),
+        B('nx_scene_gradient', { v: { A: col('#1e88e5'), B: col('#ffcba4') } }),
+        B('nx_level', { v: { TEXT: t(PLATFORM_LEVEL), T: n(40) } }),
+        B('nx_sprite', { v: { NAME: t('joueur'), LOOK: emo('🐱'), X: B('nx_start_x'), Y: B('nx_start_y'), SIZE: n(34) } }),
+        B('nx_control', { f: { TYPE: 'platform' }, v: { NAME: t('joueur'), SPEED: n(4), JUMP: n(13) } }),
+        B('nx_camera_follow', { v: { NAME: t('joueur') } }),
+        hud('⭐ ', get('score'), '   ❤️ ', get('vies')),
+        collide('joueur', 'piece', seq(
+          change('score', 1),
+          B('nx_sound', { f: { S: 'piece' } }),
+          B('nx_sprite_delete', { v: { NAME: other() } }),
+          hud('⭐ ', get('score'), '   ❤️ ', get('vies')))),
+        collide('joueur', 'ennemi', ifelse(
+          cmp('LT', sget('y', 'joueur'), arith('MINUS', sget('y', other()), n(12))),
+          seq(B('nx_explode', { v: { NAME: other(), C: col('#8e24aa') } }), B('nx_sprite_delete', { v: { NAME: other() } }),
+            B('nx_jump', { v: { NAME: t('joueur'), F: n(9) } }), B('nx_sound', { f: { S: 'saut' } }), change('score', 5),
+            hud('⭐ ', get('score'), '   ❤️ ', get('vies'))),
+          procCall('blessure'))),
+        collide('joueur', 'pic', procCall('blessure')),
+        collide('joueur', 'sortie', ifelse(cmp('EQ', B('nx_group_count', { v: { G: t('piece') } }), n(0)),
+          seq(B('nx_stop_timers'), B('nx_sound', { f: { S: 'victoire' } }), B('nx_alert', { v: { T: join('🏆 Niveau terminé ! Score : ', get('score')) } })),
+          B('nx_toast', { v: { T: join('Ramasse encore ', B('nx_group_count', { v: { G: t('piece') } }), ' étoiles !') } }))),
+        B('nx_frame', { s: { DO: ifelse(cmp('GT', sget('y', 'joueur'), n(590)), procCall('blessure')) } })
+      ), procDef('blessure', seq(
+          change('vies', -1),
+          B('nx_shake', { v: { F: n(12) } }),
+          B('nx_vibrate', { v: { MS: n(200) } }),
+          B('nx_sprite_goto', { v: { NAME: t('joueur'), X: B('nx_start_x'), Y: B('nx_start_y') } }),
+          hud('⭐ ', get('score'), '   ❤️ ', get('vies')),
+          ifelse(cmp('LTE', get('vies'), n(0)), gameOver('GAME OVER'))))]);
+    } });
+
+  T.push({ id: 'shooter', group: 'jeu', icon: '🚀', name: 'Shoot\'em up spatial', level: 'Complet', desc: 'Tir automatique, vagues d\'ennemis de plus en plus rapides, explosions, record sauvegardé.',
+    xml: function () {
+      return workspace([start(
+        set('score', n(0)),
+        set('record', B('nx_load', { v: { KEY: t('record_espace'), DEF: n(0) } })),
+        B('nx_background', { v: { C: col('#000000') } }),
+        B('nx_scene', { v: { W: n(360), H: n(600), C: col('#000000') } }),
+        B('nx_scene_gradient', { v: { A: col('#000000'), B: col('#1a237e') } }),
+        B('nx_sprite', { v: { NAME: t('vaisseau'), LOOK: emo('🚀'), X: n(180), Y: n(530), SIZE: n(50) } }),
+        B('nx_sprite_set', { f: { PROP: 'angle' }, v: { NAME: t('vaisseau'), VAL: n(-45) } }),
+        B('nx_control', { f: { TYPE: 'topdown' }, v: { NAME: t('vaisseau'), SPEED: n(6), JUMP: n(0) } }),
+        B('nx_frame', { s: { DO: B('nx_sprite_keep', { v: { NAME: t('vaisseau') } }) } }),
+        B('nx_every', { v: { SEC: n(0.25) }, s: { DO:
+          B('nx_spawn', { v: { LOOK: emo('🔥'), G: t('tir'), X: sget('x', 'vaisseau'), Y: arith('MINUS', sget('y', 'vaisseau'), n(30)), VX: n(0), VY: n(-12) } }) } }),
+        B('nx_every', { v: { SEC: n(0.7) }, s: { DO:
+          B('nx_spawn', { v: { LOOK: emo('👾'), G: t('ennemi'), X: B('math_random_int', { v: { FROM: n(20), TO: n(340) } }), Y: n(-20), VX: n(0), VY: arith('ADD', n(2), arith('DIVIDE', get('score'), n(8))) } }) } }),
+        hud('Score : ', get('score'), '   Record : ', get('record')),
+        collide('tir', 'ennemi', seq(
+          B('nx_explode', { v: { NAME: other(), C: col('#fb8c00') } }),
+          B('nx_sprite_delete', { v: { NAME: other() } }),
+          B('nx_sprite_delete', { v: { NAME: B('nx_self') } }),
+          B('nx_sound', { f: { S: 'explosion' } }),
+          change('score', 1),
+          hud('Score : ', get('score'), '   Record : ', get('record')))),
+        collide('vaisseau', 'ennemi', seq(
+          B('nx_explode', { v: { NAME: t('vaisseau'), C: col('#e53935') } }),
+          B('nx_sprite_delete', { v: { NAME: t('vaisseau') } }),
+          B('nx_shake', { v: { F: n(16) } }),
+          B('nx_vibrate', { v: { MS: n(400) } }),
+          ifelse(cmp('GT', get('score'), get('record')), B('nx_save', { v: { VAL: get('score'), KEY: t('record_espace') } })),
+          gameOver('GAME OVER')))
+      )]);
+    } });
+
+  var TOPDOWN_LEVEL = [
+    'TTTTTTTTTTTTTTTTTTTTTT',
+    'T.P....T.....*....M..T',
+    'T..*...T..TTTTT......T',
+    'T......T......T..*...T',
+    'T..TTTTT..*...T......T',
+    'T.........M...TTTT...T',
+    'T..*...........K.T...T',
+    'TTTTTT..TTTTT....T.*.T',
+    'T....*..T...T....T...T',
+    'T..M....T.*.T....TTDTT',
+    'T.......T...T........T',
+    'T..*..........*...M..T',
+    'TTTTTTTTTTTTTTTTTTTTTT'
+  ].join('|');
+
+  T.push({ id: 'aventure', group: 'jeu', icon: '🧝', name: 'Aventure vue de dessus', level: 'Complet', desc: 'Exploration façon Zelda : forêt, pièces, fantômes, clé, porte, barre de vie.',
+    xml: function () {
+      return workspace([start(
+        set('vie', n(100)), set('cle', B('logic_boolean', { f: { BOOL: 'FALSE' } })), set('score', n(0)),
+        B('nx_background', { v: { C: col('#000000') } }),
+        B('nx_scene', { v: { W: n(360), H: n(600), C: col('#7cb342') } }),
+        B('nx_level', { v: { TEXT: t(TOPDOWN_LEVEL), T: n(48) } }),
+        B('nx_sprite', { v: { NAME: t('joueur'), LOOK: emo('🧙'), X: B('nx_start_x'), Y: B('nx_start_y'), SIZE: n(38) } }),
+        B('nx_control', { f: { TYPE: 'topdown' }, v: { NAME: t('joueur'), SPEED: n(3), JUMP: n(0) } }),
+        B('nx_life_bar', { v: { NAME: t('joueur'), V: get('vie'), MAX: n(100) } }),
+        B('nx_camera_follow', { v: { NAME: t('joueur') } }),
+        hud('🪙 ', get('score'), '  🔑 ', B('logic_ternary', { v: { IF: get('cle'), THEN: t('oui'), ELSE: t('non') } })),
+        collide('joueur', 'piece', seq(change('score', 1), B('nx_sound', { f: { S: 'piece' } }), B('nx_sprite_delete', { v: { NAME: other() } }),
+          hud('🪙 ', get('score'), '  🔑 ', B('logic_ternary', { v: { IF: get('cle'), THEN: t('oui'), ELSE: t('non') } })))),
+        collide('joueur', 'cle', seq(set('cle', B('logic_boolean', { f: { BOOL: 'TRUE' } })), B('nx_sprite_delete', { v: { NAME: other() } }), B('nx_sound', { f: { S: 'victoire' } }),
+          B('nx_toast', { v: { T: t('🔑 Tu as trouvé la clé !') } }), hud('🪙 ', get('score'), '  🔑 oui'))),
+        collide('joueur', 'ennemi', seq(change('vie', -25), B('nx_life_bar', { v: { NAME: t('joueur'), V: get('vie'), MAX: n(100) } }),
+          B('nx_shake', { v: { F: n(8) } }), B('nx_vibrate', { v: { MS: n(150) } }),
+          ifelse(cmp('LTE', get('vie'), n(0)), gameOver('Tu as perdu…')))),
+        collide('joueur', 'sortie', ifelse(get('cle'),
+          seq(B('nx_stop_timers'), B('nx_sound', { f: { S: 'victoire' } }), B('nx_alert', { v: { T: join('🏆 Gagné avec ', get('score'), ' pièces !') } })),
+          B('nx_toast', { v: { T: t('🚪 Fermé… il faut la clé !') } })))
+      )]);
+    } });
+
+  T.push({ id: 'bagarre', group: 'jeu', icon: '🥷', name: 'Bagarre en 2.5D', level: 'Complet', desc: 'Perspective 2.5D, ombres, saut en hauteur, zombies qui te poursuivent, attaque au toucher.',
+    xml: function () {
+      return workspace([start(
+        set('vie', n(100)), set('ko', n(0)),
+        B('nx_background', { v: { C: col('#000000') } }),
+        B('nx_scene', { v: { W: n(360), H: n(600), C: col('#ff8a65') } }),
+        B('nx_scene_gradient', { v: { A: col('#ff7043'), B: col('#ffe0b2') } }),
+        B('nx_mode25', { v: { H: n(250), C: col('#6d4c41') } }),
+        B('nx_sprite', { v: { NAME: t('joueur'), LOOK: emo('🥷'), X: n(90), Y: n(450), SIZE: n(80) } }),
+        B('nx_control', { f: { TYPE: 'beat' }, v: { NAME: t('joueur'), SPEED: n(4), JUMP: n(11) } }),
+        B('nx_life_bar', { v: { NAME: t('joueur'), V: get('vie'), MAX: n(100) } }),
+        B('nx_frame', { s: { DO: B('nx_sprite_keep', { v: { NAME: t('joueur') } }) } }),
+        hud('👊 Touche pour frapper · KO : ', get('ko')),
+        B('nx_every', { v: { SEC: n(2) }, s: { DO: seq(
+          B('nx_spawn', { v: { LOOK: emo('🧟'), G: t('ennemi'), X: n(400), Y: B('math_random_int', { v: { FROM: n(280), TO: n(580) } }), VX: n(0), VY: n(0) } }),
+          B('nx_sprite_set', { f: { PROP: 'size' }, v: { NAME: B('nx_last_spawned'), VAL: n(76) } }),
+          B('nx_chase', { v: { NAME: B('nx_last_spawned'), T: t('joueur'), SPEED: n(1.3) } })) } }),
+        B('nx_on_tap', { s: { DO: seq(
+          B('nx_sound', { f: { S: 'clic' } }),
+          B('nx_for_each_group', { v: { G: t('ennemi') }, s: { DO:
+            ifelse(cmp('LT', B('nx_distance', { v: { A: t('joueur'), B: B('nx_current_sprite') } }), n(90)), seq(
+              B('nx_explode', { v: { NAME: B('nx_current_sprite'), C: col('#43a047') } }),
+              B('nx_sprite_delete', { v: { NAME: B('nx_current_sprite') } }),
+              B('nx_sound', { f: { S: 'explosion' } }),
+              change('ko', 1),
+              hud('👊 Touche pour frapper · KO : ', get('ko')))) } })) } }),
+        collide('ennemi', 'joueur', seq(change('vie', -10), B('nx_life_bar', { v: { NAME: t('joueur'), V: get('vie'), MAX: n(100) } }),
+          B('nx_shake', { v: { F: n(10) } }), B('nx_sprite_change', { f: { PROP: 'x' }, v: { NAME: B('nx_self'), VAL: n(80) } }),
+          ifelse(cmp('LTE', get('vie'), n(0)), gameOver('K.O. !'))))
+      )]);
+    } });
+
+  var MAZE = [
+    '################',
+    '#P...#.....#...#',
+    '#.##.#.###.#.#*#',
+    '#.#*...#...#.#.#',
+    '#.####.#.###.#.#',
+    '#......#...M.#.#',
+    '###.######.###.#',
+    '#*..#....#.....#',
+    '#.###.##.####.##',
+    '#...M..#....*.D#',
+    '################'
+  ].join('|');
+
+  T.push({ id: 'labyrinthe3d', group: 'jeu', icon: '🧱', name: 'Labyrinthe 3D', level: 'Complet', desc: 'Vraie 3D à la première personne : trouve les étoiles, évite les fantômes, atteins la porte.',
+    xml: function () {
+      return workspace([start(
+        set('etoiles', n(0)),
+        B('nx_background', { v: { C: col('#000000') } }),
+        B('nx_scene', { v: { W: n(360), H: n(600), C: col('#000000') } }),
+        B('nx_maze', { v: { TEXT: t(MAZE), SKY: col('#4fc3f7'), GROUND: col('#3e2723') } }),
+        B('nx_minimap', { f: { ON: 'TRUE' } }),
+        hud('⭐ ', get('etoiles'), ' / 4   — trouve la porte 🚪'),
+        collide('joueur', 'piece', seq(change('etoiles', 1), B('nx_sound', { f: { S: 'piece' } }), B('nx_sprite_delete', { v: { NAME: other() } }),
+          hud('⭐ ', get('etoiles'), ' / 4   — trouve la porte 🚪'))),
+        collide('joueur', 'ennemi', seq(B('nx_sound', { f: { S: 'alarme' } }), B('nx_vibrate', { v: { MS: n(300) } }), B('nx_toast', { v: { T: t('👻 BOUH ! Retour au départ') } }),
+          B('nx_sprite_goto', { v: { NAME: t('joueur'), X: n(96), Y: n(96) } }))),
+        collide('joueur', 'sortie', ifelse(cmp('EQ', B('nx_group_count', { v: { G: t('piece') } }), n(0)),
+          seq(B('nx_stop_timers'), B('nx_sound', { f: { S: 'victoire' } }), B('nx_alert', { v: { T: t('🏆 Tu es sorti du labyrinthe !') } })),
+          B('nx_toast', { v: { T: t('Il te manque des étoiles ⭐') } })))
+      )]);
+    } });
+
+  /* ===================== Applications complètes ===================== */
+  T.push({ id: 'multiapp', group: 'app', icon: '📲', name: 'App à plusieurs écrans', level: 'Complet', desc: 'Barre de titre, onglets en bas, 3 écrans, cartes, navigation, profil sauvegardé.',
+    xml: function () {
+      function cardImg(seed, title, text, page) {
+        return B('nx_card', { f: { ID: '' }, v: { IMG: t('https://picsum.photos/seed/' + seed + '/600/300'), T: t(title), TXT: t(text) }, s: { DO: page ? B('nx_go_page', { f: { NAME: page } }) : B('nx_toast', { v: { T: t(title) } }) } });
+      }
+      return workspace([start(
+        B('nx_theme', { f: { T: 'clair' } }),
+        B('nx_app_bar', { v: { T: t('Ma super app'), C: col('#ffcc22') } }),
+        B('nx_tab_bar', { v: { SPEC: t('Accueil:🏠,Galerie:🖼️,Profil:👤') } }),
+        B('nx_page', { f: { NAME: 'Accueil' }, s: { DO: seq(
+          B('nx_heading', { f: { LEVEL: '2', ID: '' }, v: { T: join('Bonjour ', B('nx_load', { v: { KEY: t('prenom'), DEF: t('toi') } }), ' 👋') } }),
+          B('nx_text', { f: { ID: '' }, v: { T: t('Bienvenue dans ton application. Touche une carte !') } }),
+          cardImg('nature', '🖼️ Voir la galerie', 'Des images magnifiques', 'Galerie'),
+          cardImg('profil', '👤 Mon profil', 'Change ton prénom', 'Profil'),
+          B('nx_button', { f: { ID: '' }, v: { LABEL: t('📤 Partager l\'app') }, s: { DO: B('nx_share', { v: { T: t('Regarde mon app faite avec NOCODEX !') } }) } })) } }),
+        B('nx_page', { f: { NAME: 'Galerie' }, s: { DO: seq(
+          B('nx_heading', { f: { LEVEL: '2', ID: '' }, v: { T: t('🖼️ Galerie') } }),
+          cardImg('montagne', 'Montagne', 'Les Alpes au lever du soleil'),
+          cardImg('ocean', 'Océan', 'Vagues et horizon'),
+          cardImg('ville', 'Ville', 'Lumières de la nuit')) } }),
+        B('nx_page', { f: { NAME: 'Profil' }, s: { DO: seq(
+          B('nx_heading', { f: { LEVEL: '2', ID: '' }, v: { T: t('👤 Mon profil') } }),
+          B('nx_input', { f: { ID: 'prenom', TYPE: 'text' }, v: { PH: t('Ton prénom') } }),
+          B('nx_set_value', { f: { ID: 'prenom' }, v: { VAL: B('nx_load', { v: { KEY: t('prenom'), DEF: t('') } }) } }),
+          B('nx_button', { f: { ID: '' }, v: { LABEL: t('💾 Enregistrer') }, s: { DO: seq(
+            B('nx_save', { v: { VAL: B('nx_value', { f: { ID: 'prenom' } }), KEY: t('prenom') } }),
+            B('nx_toast', { v: { T: t('Enregistré ✔') } }),
+            B('nx_go_page', { f: { NAME: 'Accueil' } })) } })) } })
+      )]);
+    } });
+
+  T.push({ id: 'contacts', group: 'app', icon: '📇', name: 'Carnet de contacts', level: 'Complet', desc: 'Vraie base de données : ajouter, chercher, tableau, détails au toucher, tout effacer.',
+    xml: function () {
+      return workspace([start(
+        B('nx_theme', { f: { T: 'ocean' } }),
+        B('nx_app_bar', { v: { T: t('📇 Mes contacts'), C: col('#1e88e5') } }),
+        B('nx_input', { f: { ID: 'nom', TYPE: 'text' }, v: { PH: t('Nom') } }),
+        B('nx_input', { f: { ID: 'tel', TYPE: 'text' }, v: { PH: t('Téléphone') } }),
+        B('nx_button', { f: { ID: '' }, v: { LABEL: t('＋ Ajouter') }, s: { DO: seq(
+          B('nx_db_add', { v: { ITEM: B('nx_obj', { f: { K1: 'nom', K2: 'téléphone', K3: '' }, v: { V1: B('nx_value', { f: { ID: 'nom' } }), V2: B('nx_value', { f: { ID: 'tel' } }) } }), C: t('contacts') } }),
+          B('nx_set_value', { f: { ID: 'nom' }, v: { VAL: t('') } }),
+          B('nx_set_value', { f: { ID: 'tel' }, v: { VAL: t('') } }),
+          B('nx_table', { f: { ID: 'tableau' }, v: { L: B('nx_db_all', { v: { C: t('contacts') } }) } }),
+          B('nx_toast', { v: { T: t('Contact ajouté ✔') } })) } }),
+        B('nx_input', { f: { ID: 'cherche', TYPE: 'text' }, v: { PH: t('🔎 Chercher un nom…') } }),
+        B('nx_on_change', { f: { ID: 'cherche' }, s: { DO:
+          B('nx_table', { f: { ID: 'tableau' }, v: { L: B('nx_db_find', { v: { C: t('contacts'), K: t('nom'), V: B('nx_value', { f: { ID: 'cherche' } }) } }) } }) } }),
+        B('nx_table', { f: { ID: 'tableau' }, v: { L: B('nx_db_all', { v: { C: t('contacts') } }) } }),
+        B('nx_on_table', { f: { ID: 'tableau' }, s: { DO:
+          B('nx_alert', { v: { T: join('📞 ', B('nx_get_prop', { v: { O: B('nx_clicked_item'), K: t('nom') } }), ' : ', B('nx_get_prop', { v: { O: B('nx_clicked_item'), K: t('téléphone') } })) } }) } }),
+        B('nx_button', { f: { ID: '' }, v: { LABEL: t('🗑️ Tout effacer') }, s: { DO:
+          ifelse(B('nx_confirm', { v: { Q: t('Effacer tous les contacts') } }), seq(
+            B('nx_db_clear', { v: { C: t('contacts') } }),
+            B('nx_table', { f: { ID: 'tableau' }, v: { L: B('nx_db_all', { v: { C: t('contacts') } }) } }))) } })
+      )]);
+    } });
+
+  T.push({ id: 'depenses', group: 'app', icon: '📊', name: 'Suivi de dépenses', level: 'Complet', desc: 'Base de données + tableau + graphique + total, avec une fonction réutilisable.',
+    xml: function () {
+      return workspace([
+        start(
+          B('nx_theme', { f: { T: 'sombre' } }),
+          B('nx_app_bar', { v: { T: t('💶 Mes dépenses'), C: col('#43a047') } }),
+          B('nx_box', { f: { ID: 'saisie', LAYOUT: 'row' }, s: { DO: seq(
+            B('nx_input', { f: { ID: 'quoi', TYPE: 'text' }, v: { PH: t('Quoi ?') } }),
+            B('nx_input', { f: { ID: 'combien', TYPE: 'number' }, v: { PH: t('€') } })) } }),
+          B('nx_button', { f: { ID: '' }, v: { LABEL: t('＋ Ajouter la dépense') }, s: { DO: seq(
+            B('nx_db_add', { v: { ITEM: B('nx_obj', { f: { K1: 'quoi', K2: 'montant', K3: '' }, v: { V1: B('nx_value', { f: { ID: 'quoi' } }), V2: B('nx_number_of', { f: { ID: 'combien' } }) } }), C: t('depenses') } }),
+            procCall('rafraichir')) } }),
+          B('nx_heading', { f: { LEVEL: '2', ID: 'total' }, v: { T: t('Total : 0 €') } }),
+          B('nx_chart', { f: { TYPE: 'bar', ID: 'graph' }, v: { V: t(''), L: t('') } }),
+          B('nx_table', { f: { ID: 'tableau' }, v: { L: B('lists_create_with', { m: '<mutation items="0"></mutation>' }) } }),
+          B('nx_button', { f: { ID: '' }, v: { LABEL: t('🗑️ Remettre à zéro') }, s: { DO: seq(B('nx_db_clear', { v: { C: t('depenses') } }), procCall('rafraichir')) } }),
+          procCall('rafraichir')),
+        procDef('rafraichir', seq(
+          set('montants', B('lists_create_with', { m: '<mutation items="0"></mutation>' })),
+          set('noms', B('lists_create_with', { m: '<mutation items="0"></mutation>' })),
+          B('controls_forEach', { f: { VAR: V('d') }, v: { LIST: B('nx_db_all', { v: { C: t('depenses') } }) }, s: { DO: seq(
+            B('lists_setIndex', { m: '<mutation at="false"></mutation>', f: { MODE: 'INSERT', WHERE: 'LAST' }, v: { LIST: get('montants'), TO: B('nx_get_prop', { v: { O: get('d'), K: t('montant') } }) } }),
+            B('lists_setIndex', { m: '<mutation at="false"></mutation>', f: { MODE: 'INSERT', WHERE: 'LAST' }, v: { LIST: get('noms'), TO: B('nx_get_prop', { v: { O: get('d'), K: t('quoi') } }) } })) } }),
+          B('nx_table', { f: { ID: 'tableau' }, v: { L: B('nx_db_all', { v: { C: t('depenses') } }) } }),
+          B('nx_chart', { f: { TYPE: 'bar', ID: 'graph' }, v: { V: get('montants'), L: get('noms') } }),
+          B('nx_set_text', { f: { ID: 'total' }, v: { T: join('Total : ', B('nx_format', { v: { N: B('math_on_list', { f: { OP: 'SUM' }, v: { LIST: get('montants') } }), D: n(2) } }), ' €') } })))
+      ]);
+    } });
+
+  var GROUP_OF = { vide: 'apprendre', bonjour: 'apprendre', compteur: 'jeu', calculatrice: 'app', devine: 'jeu', taches: 'app', jeu: 'jeu', balle: 'jeu',
+    dessin: 'apprendre', quiz: 'jeu', api: 'app', horloge: 'app', piano: 'app', profil: 'apprendre', meteo: 'app', html: 'apprendre' };
+  T.forEach(function (x) { if (!x.group) x.group = GROUP_OF[x.id] || 'apprendre'; });
+  // Les jeux et apps complets en premier.
+  T.sort(function (a, b) { return (a.level === 'Complet' ? 0 : 1) - (b.level === 'Complet' ? 0 : 1); });
 
   window.NXTemplates = { list: T, byId: function (id) { return T.filter(function (x) { return x.id === id; })[0]; } };
 })();

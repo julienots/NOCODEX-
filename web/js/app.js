@@ -132,7 +132,7 @@
     NXBlocks.register();
     Blockly.Msg.NEW_VARIABLE = '➕ Créer une variable…';
     ws = Blockly.inject('blockly', {
-      toolbox: NXBlocks.toolbox(),
+      toolbox: NXBlocks.toolbox(blockMode),
       renderer: 'zelos',
       theme: theme,
       media: 'vendor/media/',
@@ -150,12 +150,79 @@
       if (!$('#live-code').hidden) liveSoon();
     });
     window.addEventListener('resize', function () { Blockly.svgResize(ws); });
-    // Catégories compactes : l'emoji au-dessus du nom (gain de place sur téléphone).
+    compactCategories();
+    updateModeButton();
+  }
+
+  // Catégories compactes : l'emoji au-dessus du nom (gain de place sur téléphone).
+  function compactCategories() {
     $$('.blocklyToolboxCategoryLabel').forEach(function (l) {
+      if (l.querySelector('.ci')) return;
       var m = l.textContent.match(/^(\S+)\s+(.*)$/);
       if (m) l.innerHTML = '<span class="ci">' + esc(m[1]) + '</span><span>' + esc(m[2]) + '</span>';
     });
     Blockly.svgResize(ws);
+  }
+
+  /* ---------- Mode Facile / Expert ---------- */
+  var blockMode = load('mode', 'easy');
+  function updateModeButton() {
+    $('#btn-mode').textContent = blockMode === 'easy' ? '🟢 Facile' : '🔥 Expert';
+  }
+  function setBlockMode(m) {
+    blockMode = m;
+    store('mode', m);
+    ws.updateToolbox(NXBlocks.toolbox(m));
+    setTimeout(compactCategories, 0);
+    updateModeButton();
+  }
+  $('#btn-mode').onclick = function () {
+    openModal('<h2>Niveau des blocs</h2>' +
+      '<button class="export-opt" data-m="easy"><span class="ic">🟢</span><span><b>Facile</b><small>Seulement les blocs essentiels, rangés par envie : Afficher, Jeu, Touche & tir, Mondes, Sons… Idéal pour commencer.</small></span></button>' +
+      '<button class="export-opt" data-m="expert"><span class="ic">🔥</span><span><b>Expert</b><small>Tous les blocs (plus de 250) : écrans, physique, collisions, base de données, graphiques, Internet, appareil, code brut…</small></span></button>' +
+      '<p style="font-size:13px;color:var(--muted)">Tes projets restent identiques : seul le choix de blocs proposé change.</p>', function (b) {
+      $$('[data-m]', b).forEach(function (x) { x.onclick = function () { closeModal(); setBlockMode(x.dataset.m); toast(x.dataset.m === 'easy' ? 'Mode Facile 🟢' : 'Mode Expert 🔥'); }; });
+    });
+  };
+
+  /* ---------- Chercher un bloc ---------- */
+  $('#btn-find').onclick = function () {
+    openModal('<h2>🔎 Je cherche un bloc pour…</h2><input id="find-q" class="search" type="search" placeholder="ex : sauter, son, bouton, score, écran, sauvegarder…">' +
+      '<div class="chips" id="find-ideas">' + ['sauter', 'tirer', 'score', 'bouton', 'son', 'écran', 'niveau', 'sauvegarder', 'internet', 'graphique', '3D', 'vibrer'].map(function (w) { return '<button class="chip" data-w="' + w + '">' + w + '</button>'; }).join('') + '</div>' +
+      '<div id="find-res" style="margin-top:10px"></div>', function (b) {
+      var q = $('#find-q', b);
+      var SYN = { sauter: 'saut sauter jump', tirer: 'apparaître tir balle', score: 'score variable hud ajouter', bouton: 'bouton', son: 'son note effet voix', 'écran': 'écran page navigation', niveau: 'niveau lettres', sauvegarder: 'sauvegarde base', internet: 'télécharger internet api', graphique: 'graphique tableau', '3d': 'labyrinthe 3d 2.5d', vibrer: 'vibrer' };
+      function norm(x) { return String(x).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, ''); }
+      function show() {
+        var words = norm(SYN[norm(q.value)] || q.value).split(/\s+/).filter(Boolean);
+        var res = [];
+        if (words.length) encyclopediaEntries().forEach(function (c) {
+          c.items.forEach(function (it) {
+            var hay = norm(it.name + ' ' + it.help);
+            var score = words.filter(function (w) { return hay.indexOf(w) >= 0; }).length;
+            if (score) res.push({ c: c, it: it, score: score + (norm(it.name).indexOf(words[0]) >= 0 ? 2 : 0) });
+          });
+        });
+        res.sort(function (a, b2) { return b2.score - a.score; });
+        $('#find-res', b).innerHTML = res.slice(0, 25).map(function (r, i) {
+          return '<button class="ency-item" style="border-left-color:' + r.c.colour + '" data-i="' + i + '"><span><span class="n">' + esc(r.it.name) + '</span><br><span class="h">' + esc(r.it.help) + '</span></span></button>';
+        }).join('') || (words.length ? '<p class="info">Rien trouvé. Essaie un autre mot !</p>' : '');
+        $$('#find-res [data-i]', b).forEach(function (x) { x.onclick = function () { var r = res[+x.dataset.i]; addBlockToWorkspace(r.it.entry); }; });
+      }
+      q.addEventListener('input', debounce(show, 120));
+      $$('[data-w]', b).forEach(function (x) { x.onclick = function () { q.value = x.dataset.w; show(); }; });
+      setTimeout(function () { q.focus(); }, 60);
+    });
+  };
+
+  function addBlockToWorkspace(entry) {
+    var blk = Blockly.serialization.blocks.append(entryToState(entry), ws);
+    var m = ws.getMetricsManager().getViewMetrics(true);
+    blk.moveBy(m.left + 40 - blk.getRelativeToSurfaceXY().x, m.top + 60 - blk.getRelativeToSurfaceXY().y);
+    closeModal();
+    showTab('blocks');
+    blk.select();
+    toast('Bloc ajouté : glisse-le à sa place 🧩');
   }
 
   function generate(lang) {
@@ -295,20 +362,25 @@
   }
 
   function renderTemplates() {
-    $('#template-grid').innerHTML = NXTemplates.list.map(function (t) {
-      return '<button class="card" data-tpl="' + t.id + '"><span class="ic">' + t.icon + '</span><span class="t">' + esc(t.name) + '</span>' +
-        '<span class="tag">' + esc(t.level) + '</span><span class="d">' + esc(t.desc) + '</span></button>';
-    }).join('');
+    $('#template-grid').outerHTML = '<div id="template-grid">' + chooserHtml() + '</div>';
     $$('#template-grid [data-tpl]').forEach(function (b) { b.onclick = function () { newProjectDialog(b.dataset.tpl); }; });
   }
 
-  $('#btn-new').onclick = function () {
-    openModal('<h2>＋ Nouveau projet</h2><p>Choisis un point de départ :</p><div class="grid">' + NXTemplates.list.map(function (t) {
-      return '<button class="card" data-tpl="' + t.id + '"><span class="ic">' + t.icon + '</span><span class="t">' + esc(t.name) + '</span><span class="d">' + esc(t.desc) + '</span></button>';
-    }).join('') + '</div>', function (b) {
+  var GROUPS = [['jeu', '🎮 Un jeu'], ['app', '📱 Une application'], ['apprendre', '🎓 Pour apprendre']];
+  function chooserHtml() {
+    return GROUPS.map(function (g) {
+      var list = NXTemplates.list.filter(function (t) { return (t.group || 'apprendre') === g[0]; });
+      return '<h2 style="margin-top:14px">' + g[1] + '</h2><div class="grid">' + list.map(function (t) {
+        return '<button class="card" data-tpl="' + t.id + '"><span class="ic">' + t.icon + '</span><span class="t">' + esc(t.name) + '</span><span class="tag">' + esc(t.level) + '</span><span class="d">' + esc(t.desc) + '</span></button>';
+      }).join('') + '</div>';
+    }).join('');
+  }
+  function openChooser() {
+    openModal('<h2>✨ Qu\'est-ce que tu veux créer ?</h2><p>Choisis : tout est déjà prêt et fonctionne. Tu n\'as plus qu\'à le modifier avec tes blocs !</p>' + chooserHtml(), function (b) {
       $$('[data-tpl]', b).forEach(function (el) { el.onclick = function () { closeModal(); newProjectDialog(el.dataset.tpl); }; });
     });
-  };
+  }
+  $('#btn-new').onclick = openChooser;
 
   $('#import-file').onchange = function (e) {
     var f = e.target.files[0];
@@ -444,7 +516,29 @@
     '.nx-toast{position:fixed;left:50%;bottom:30px;transform:translateX(-50%);background:#111;color:#fff;padding:10px 18px;border-radius:99px;font-weight:700;z-index:99;transition:opacity .4s;max-width:90vw;text-align:center}',
     '.nx-toast.nx-hide{opacity:0}',
     '#nx-error{position:fixed;left:8px;right:8px;top:8px;background:#ff5a5f;color:#fff;padding:10px 12px;border-radius:12px;font:600 13px system-ui;z-index:100}',
-    'a{color:#1e88e5;font-weight:600}'
+    'a{color:#1e88e5;font-weight:600}',
+    ':root{--nx-accent:#ffcc22;--nx-accent-ink:#111}',
+    '.nx-btn{background:var(--nx-accent);color:var(--nx-accent-ink)}',
+    'body.nx-has-appbar{padding-top:56px}body.nx-has-tabbar #nx-app{padding-bottom:84px}',
+    '#nx-appbar{position:fixed;top:0;left:0;right:0;height:56px;display:flex;align-items:center;gap:8px;padding:0 10px;background:var(--nx-accent);color:var(--nx-accent-ink);font:800 19px system-ui;z-index:60;box-shadow:0 2px 12px #0003}',
+    '#nx-appbar .nx-back{border:0;background:#0001;color:inherit;width:40px;height:40px;border-radius:50%;font:800 20px system-ui}',
+    '#nx-tabbar{position:fixed;left:0;right:0;bottom:0;height:68px;display:flex;background:#fff;border-top:1px solid #0001;z-index:60;box-shadow:0 -2px 12px #0002}',
+    '#nx-tabbar button{flex:1;border:0;background:none;display:flex;flex-direction:column;align-items:center;justify-content:center;font:700 11px system-ui;color:#888}',
+    '#nx-tabbar button i{font-style:normal;font-size:22px;filter:grayscale(1);opacity:.6}',
+    '#nx-tabbar button.on{color:#111}#nx-tabbar button.on i{filter:none;opacity:1;transform:scale(1.15)}',
+    '.nx-tapcard{display:flex;flex-direction:column;gap:0;padding:0;overflow:hidden;cursor:pointer;text-align:left;background:#fff;color:#16161d}',
+    '.nx-tapcard img{width:100%;aspect-ratio:2/1;object-fit:cover}.nx-tapcard>div{padding:12px 14px}.nx-tapcard h3{margin:0 0 4px}.nx-tapcard p{margin:0;opacity:.75}',
+    '.nx-tapcard:active{transform:scale(.98)}',
+    '.nx-badge{align-self:flex-start;background:#e53935;color:#fff;font:800 12px system-ui;padding:3px 10px;border-radius:99px}',
+    '.nx-progress{width:100%;height:14px;accent-color:var(--nx-accent)}',
+    '.nx-table{width:100%;border-collapse:collapse;font-size:14px;background:#0000000a;border-radius:12px;overflow:hidden}',
+    '.nx-table th{background:var(--nx-accent);color:var(--nx-accent-ink);text-align:left;padding:8px}.nx-table td{padding:8px;border-top:1px solid #0001}',
+    '.nx-chart{width:100%;max-width:640px;align-self:center;background:#0000000a;border-radius:12px}',
+    '.nx-page-in{animation:nxIn .25s ease}@keyframes nxIn{from{opacity:0;transform:translateY(12px)}}',
+    '.nx-fx-bounce{animation:nxBounce .6s}.nx-fx-shake{animation:nxShake .5s}.nx-fx-fade{animation:nxIn .6s}.nx-fx-zoom{animation:nxZoom .5s}.nx-fx-spin{animation:nxSpin .7s}.nx-fx-pulse{animation:nxPulse .8s 2}',
+    '@keyframes nxBounce{30%{transform:translateY(-18px)}60%{transform:translateY(0)}80%{transform:translateY(-6px)}}',
+    '@keyframes nxShake{20%,60%{transform:translateX(-8px)}40%,80%{transform:translateX(8px)}}',
+    '@keyframes nxZoom{from{transform:scale(.3);opacity:0}}@keyframes nxSpin{to{transform:rotate(360deg)}}@keyframes nxPulse{50%{transform:scale(1.08)}}'
   ].join('\n');
 
   function scriptSafe(code) { return String(code || '').replace(/<\/(script)/gi, '<\\/$1'); }
@@ -730,15 +824,7 @@
       $$('#sheet-langs .chip', b).forEach(function (ch) {
         ch.onclick = function () { $$('#sheet-langs .chip', b).forEach(function (x) { x.classList.toggle('active', x === ch); }); show(ch.dataset.l); };
       });
-      $('#sheet-add', b).onclick = function () {
-        var blk = Blockly.serialization.blocks.append(entryToState(it.entry), ws);
-        var m = ws.getMetricsManager().getViewMetrics(true);
-        blk.moveBy(m.left + 40 - blk.getRelativeToSurfaceXY().x, m.top + 40 - blk.getRelativeToSurfaceXY().y);
-        closeModal();
-        showTab('blocks');
-        blk.select();
-        toast('Bloc ajouté : relie-le à ton programme 🧩');
-      };
+      $('#sheet-add', b).onclick = function () { addBlockToWorkspace(it.entry); };
     });
   }
 
@@ -947,7 +1033,8 @@
   function welcome() {
     openModal('<h2>Bienvenue dans NOCODEX ! 👋</h2><p>Ici tu crées <b>des applications, des sites et des jeux sans écrire de code</b>, en emboîtant des blocs. Tu peux voir le vrai code dans 5 langages, et exporter ton app en <b>HTML, ZIP ou APK Android</b>.</p>' +
       '<p>Un premier projet « Bonjour » est déjà ouvert. Appuie sur <b>▶ Lancer</b> pour le tester !</p>' +
-      '<div class="row"><button class="btn primary" id="w-tour">🧭 Faire la visite guidée</button><button class="btn" id="w-skip">Plus tard</button></div>', function (b) {
+      '<div class="row"><button class="btn primary" id="w-create">✨ Je veux créer…</button><button class="btn" id="w-tour">🧭 Visite guidée</button><button class="btn" id="w-skip">Plus tard</button></div>', function (b) {
+      $('#w-create', b).onclick = function () { store('toured', true); openChooser(); };
       $('#w-tour', b).onclick = function () { closeModal(); startTour(); };
       $('#w-skip', b).onclick = function () { closeModal(); store('toured', true); };
     });
